@@ -10,6 +10,27 @@ This guide explains how to deploy the Next.js application in an AWS Auto Scaling
 - Package manager: `dnf` (not `yum` with `amazon-linux-extras`)
 - If you're using Amazon Linux 2, modify the scripts to use `amazon-linux-extras install nginx1` instead of `dnf install nginx`
 
+## ⚠️ Critical: t2.micro Memory Issues
+
+**The #1 cause of deployment failures is Out of Memory during `npm ci`**
+
+T2.micro instances have only 1GB RAM. When `npm ci` installs dependencies, it can use 800MB+ RAM, causing the Linux OOM killer to terminate the process with "Killed".
+
+**Solutions (Scripts now handle this automatically):**
+- ✅ Deployment scripts now automatically create 1GB swap space
+- ✅ This prevents OOM killer from terminating `npm ci`
+- ✅ `npm ci` will take 2-3 minutes but will complete successfully
+
+**If you're experiencing "Killed" errors:**
+1. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - "npm ci Gets Killed" section
+2. Run the quick fix script: `bash deployment/fix-oom-issue.sh`
+3. Or manually add swap: `sudo dd if=/dev/zero of=/swapfile bs=128M count=8 && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`
+
+**For production, consider:**
+- Using t3.small (2GB RAM) or larger
+- Pre-building in CI/CD and deploying artifacts
+- Using containerized deployments (ECS Fargate)
+
 ## Architecture Overview
 
 ```

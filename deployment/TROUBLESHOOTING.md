@@ -1,5 +1,65 @@
 # Deployment Troubleshooting Guide
 
+## Error: "npm ci" Gets Killed (Most Common on t2.micro)
+
+### Symptoms
+```bash
+npm ci --production=false
+# Installing dependencies...
+# Killed
+```
+
+Or in logs:
+```bash
+npm ERR! code ELIFECYCLE
+npm ERR! errno 137
+```
+
+### Root Cause
+**Out of Memory (OOM)** - The Linux kernel killed the process because t2.micro (1GB RAM) ran out of memory during `npm ci`. This is the #1 cause of failed deployments.
+
+When `npm ci` installs and compiles native dependencies, it can use 800MB+ RAM, exhausting the available memory. The Linux OOM killer terminates the process, leaving you with:
+- ❌ Incomplete `node_modules/` directory
+- ❌ Missing packages (including `next`)
+- ❌ Build failures
+
+### Solution
+
+#### Immediate Fix - Add Swap Space
+
+```bash
+# SSH into your EC2 instance
+ssh -i your-key.pem ec2-user@instance-ip
+
+# Create 1GB swap file
+sudo dd if=/dev/zero of=/swapfile bs=128M count=8
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+
+# Verify swap is active
+free -h
+# Should show ~1GB swap
+
+# Now retry the deployment
+cd /opt/nextjs-app
+rm -rf node_modules  # Remove partial installation
+npm ci --production=false  # Should complete without being killed
+npm run build
+```
+
+#### Why This Works
+Swap space acts as virtual memory, giving the system an additional 1GB to use. This prevents the OOM killer from terminating `npm ci`.
+
+#### Performance Note
+- With swap: `npm ci` takes 2-3 minutes (slow but completes)
+- Without swap: `npm ci` gets killed (fails)
+
+**For production**, consider using t3.small (2GB RAM) or larger to avoid swap usage.
+
+---
+
 ## Error: "next: command not found" During Build
 
 ### Symptoms

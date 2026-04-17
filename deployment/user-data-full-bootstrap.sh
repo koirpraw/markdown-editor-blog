@@ -97,6 +97,19 @@ until ping -c1 github.com &>/dev/null; do
     sleep 2
 done
 
+# Create swap space for t2.micro instances (prevent OOM during npm install)
+echo "Creating swap space (1GB)..."
+sudo dd if=/dev/zero of=/swapfile bs=128M count=8
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+echo "Swap space created and enabled"
+
+# Verify environment
+echo "Memory status:"
+free -h
+
 # Verify Node.js environment before building
 echo "Verifying Node.js environment..."
 echo "Node version: $(node --version)"
@@ -104,7 +117,7 @@ echo "npm version: $(npm --version)"
 echo "Current working directory: $(pwd)"
 
 # Install dependencies and build
-echo "Installing dependencies..."
+echo "Installing dependencies (this may take 2-3 minutes)..."
 npm ci --production=false
 
 echo "Building application..."

@@ -123,6 +123,24 @@ BRANCH="main"
 
 echo "Starting deployment..."
 
+# Check and create swap space if needed (for t2.micro instances)
+if [ ! -f /swapfile ]; then
+    echo "Creating swap space (1GB) to prevent OOM during npm install..."
+    sudo dd if=/dev/zero of=/swapfile bs=128M count=8
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+    echo "Swap space created and enabled"
+else
+    # Ensure swap is enabled
+    sudo swapon /swapfile 2>/dev/null || true
+fi
+
+# Verify swap is active
+echo "Memory status:"
+free -h
+
 # Source NVM (explicitly use ec2-user's NVM installation)
 export NVM_DIR="/home/ec2-user/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -147,7 +165,7 @@ else
 fi
 
 # Install dependencies and build
-echo "Installing dependencies..."
+echo "Installing dependencies (this may take 2-3 minutes)..."
 npm ci --production=false
 
 echo "Building application..."
@@ -195,15 +213,9 @@ EOF
 
 sudo chmod +x /opt/user-data-bootstrap.sh
 
-# Optional: Add swap space for t2.micro instances (1GB swap)
-# Uncomment the following lines if you experience memory issues during build:
-# echo "Setting up swap space..."
-# sudo dd if=/dev/zero of=/swapfile bs=128M count=8
-# sudo chmod 600 /swapfile
-# sudo mkswap /swapfile
-# sudo swapon /swapfile
-# echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
-# echo "Swap space configured"
-
 echo "Golden AMI setup complete!"
+echo ""
+echo "NOTE: Swap space will be automatically created on first deployment"
+echo "      to prevent OOM (Out of Memory) errors during npm install."
+echo ""
 echo "You can now create an AMI from this instance"

@@ -1,5 +1,39 @@
 # Quick Reference Guide
 
+## 🚨 Emergency Fixes
+
+### npm ci Gets Killed (OOM Error)
+
+**Symptom:** `npm ci --production=false` returns "Killed"
+
+**Immediate fix on EC2:**
+```bash
+# Download and run the fix script
+curl -O https://raw.githubusercontent.com/YOUR_USERNAME/markdown-editor-blog/main/deployment/fix-oom-issue.sh
+chmod +x fix-oom-issue.sh
+./fix-oom-issue.sh
+```
+
+**Or manually:**
+```bash
+# Add swap space
+sudo dd if=/dev/zero of=/swapfile bs=128M count=8
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+free -h  # Verify swap is active
+
+# Clean and reinstall
+cd /opt/nextjs-app
+rm -rf node_modules .next
+source ~/.nvm/nvm.sh && nvm use 20
+npm ci --production=false
+npm run build
+pm2 restart nextjs-blog
+```
+
+---
+
 ## Important: Amazon Linux Version
 
 **These scripts are designed for Amazon Linux 2023**
