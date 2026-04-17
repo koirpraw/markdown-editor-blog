@@ -97,8 +97,17 @@ until ping -c1 github.com &>/dev/null; do
     sleep 2
 done
 
+# Verify Node.js environment before building
+echo "Verifying Node.js environment..."
+echo "Node version: $(node --version)"
+echo "npm version: $(npm --version)"
+echo "Current working directory: $(pwd)"
+
 # Install dependencies and build
+echo "Installing dependencies..."
 npm ci --production=false
+
+echo "Building application..."
 npm run build
 
 # Create PM2 ecosystem config

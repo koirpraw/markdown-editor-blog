@@ -123,10 +123,16 @@ BRANCH="main"
 
 echo "Starting deployment..."
 
-# Source NVM
-export NVM_DIR="$HOME/.nvm"
+# Source NVM (explicitly use ec2-user's NVM installation)
+export NVM_DIR="/home/ec2-user/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Load NVM and use Node.js 20
 nvm use 20
+
+# Verify Node.js is available
+echo "Using Node.js version: $(node --version)"
+echo "Using npm version: $(npm --version)"
 
 # Clone or pull latest code
 if [ -d "$APP_DIR/.git" ]; then
