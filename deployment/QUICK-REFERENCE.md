@@ -9,7 +9,7 @@
 **Immediate fix on EC2:**
 ```bash
 # Download and run the fix script
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/markdown-editor-blog/main/deployment/fix-oom-issue.sh
+curl -O https://raw.githubusercontent.com/koirpraw/markdown-editor-blog/main/deployment/fix-oom-issue.sh
 chmod +x fix-oom-issue.sh
 ./fix-oom-issue.sh
 ```

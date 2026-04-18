@@ -32,7 +32,42 @@ sudo systemctl enable nginx
 sudo mkdir -p /opt/nextjs-app
 sudo chown -R ec2-user:ec2-user /opt/nextjs-app
 
-# Configure NGINX
+# Backup original NGINX config
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup
+
+# Remove default server block from main config if it exists (Amazon Linux 2023)
+# and ensure conf.d is included
+sudo tee /etc/nginx/nginx.conf > /dev/null <<'NGINX_MAIN'
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log notice;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    keepalive_timeout   65;
+    types_hash_max_size 4096;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    include /etc/nginx/conf.d/*.conf;
+}
+NGINX_MAIN
+
+# Configure NGINX for Next.js app
 sudo tee /etc/nginx/conf.d/nextjs-app.conf > /dev/null <<'EOF'
 upstream nextjs_upstream {
   server 127.0.0.1:3000;
