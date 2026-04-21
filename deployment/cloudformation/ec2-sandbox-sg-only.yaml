@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "EC2 Sandbox Setup - Security Group Only (Most Reliable)"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Configuration"
+        Parameters:
+          - Environment
+          - SecurityGroupName
+    ParameterLabels:
+      Environment:
+        default: "Environment Name"
+      SecurityGroupName:
+        default: "Security Group Name"
+
+Parameters:
+  Environment:
+    Description: Environment identifier (dev, sandbox, test)
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - sandbox
+      - dev
+      - test
+
+  SecurityGroupName:
+    Description: Name for the security group
+    Type: String
+    Default: WebServer-SG
+
+Resources:
+  # Security Group for Web Server
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Ref SecurityGroupName
+      GroupDescription: Security group for web servers - allows SSH and HTTP from anywhere
+      SecurityGroupIngress:
+        # SSH access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access from anywhere
+        # HTTP access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access from anywhere
+        # HTTPS access from anywhere (IPv4) - optional
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access from anywhere
+      Tags:
+        - Key: Name
+          Value: !Ref SecurityGroupName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  SecurityGroupId:
+    Description: ID of the WebServer Security Group
+    Value: !Ref WebServerSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupId"
+
+  SecurityGroupName:
+    Description: Name of the WebServer Security Group
+    Value: !Ref SecurityGroupName
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupName"

@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "EC2 Sandbox Setup - With Key Pair (Using Retain Policy to Avoid Deletion Issues)"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Configuration"
+        Parameters:
+          - Environment
+          - KeyPairName
+          - SecurityGroupName
+    ParameterLabels:
+      Environment:
+        default: "Environment Name"
+      KeyPairName:
+        default: "Key Pair Name"
+      SecurityGroupName:
+        default: "Security Group Name"
+
+Parameters:
+  Environment:
+    Description: Environment identifier (dev, sandbox, test)
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - sandbox
+      - dev
+      - test
+
+  KeyPairName:
+    Description: Name for the EC2 key pair
+    Type: String
+    Default: sandbox-key
+    AllowedPattern: "^[a-zA-Z0-9-_]+$"
+    ConstraintDescription: "Key pair name must contain only alphanumeric characters, hyphens, and underscores"
+
+  SecurityGroupName:
+    Description: Name for the security group
+    Type: String
+    Default: WebServer-SG
+
+Resources:
+  # EC2 Key Pair with Retain policy to avoid deletion issues
+  MyEC2KeyPair:
+    Type: AWS::EC2::KeyPair
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      KeyName: !Ref KeyPairName
+      KeyType: rsa
+      KeyFormat: pem
+      Tags:
+        - Key: Name
+          Value: !Ref KeyPairName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # Security Group for Web Server
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Ref SecurityGroupName
+      GroupDescription: Security group for web servers - allows SSH and HTTP from anywhere
+      SecurityGroupIngress:
+        # SSH access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access from anywhere
+        # HTTP access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access from anywhere
+        # HTTPS access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS access from anywhere
+      Tags:
+        - Key: Name
+          Value: !Ref SecurityGroupName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  KeyPairId:
+    Description: ID of the created EC2 Key Pair
+    Value: !GetAtt MyEC2KeyPair.KeyPairId
+    Export:
+      Name: !Sub "${AWS::StackName}-KeyPairId"
+
+  KeyPairName:
+    Description: Name of the created EC2 Key Pair
+    Value: !Ref KeyPairName
+    Export:
+      Name: !Sub "${AWS::StackName}-KeyPairName"
+
+  KeyPairFingerprint:
+    Description: Fingerprint of the created EC2 Key Pair
+    Value: !GetAtt MyEC2KeyPair.KeyFingerprint
+    Export:
+      Name: !Sub "${AWS::StackName}-KeyPairFingerprint"
+
+  PrivateKeySSMParameter:
+    Description: AWS Systems Manager Parameter Store path for the private key
+    Value: !Sub "/ec2/keypair/${MyEC2KeyPair.KeyPairId}"
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateKeyParameter"
+
+  SecurityGroupId:
+    Description: ID of the WebServer Security Group
+    Value: !Ref WebServerSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupId"
+
+  SecurityGroupName:
+    Description: Name of the WebServer Security Group
+    Value: !Ref SecurityGroupName
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupName"
+
+  GetPrivateKeyCommand:
+    Description: Command to retrieve the private key
+    Value: !Sub |
+      aws ssm get-parameter --name /ec2/keypair/${MyEC2KeyPair.KeyPairId} --with-decryption --query Parameter.Value --output text > ${KeyPairName}.pem && chmod 400 ${KeyPairName}.pem

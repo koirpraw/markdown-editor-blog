@@ -2,6 +2,31 @@
 
 This directory contains reusable CloudFormation templates for quickly setting up your AWS sandbox environment.
 
+## 🚀 Quick Start (Easiest Method)
+
+**Use the automated script for a hassle-free setup:**
+
+```bash
+cd deployment/cloudformation
+./create-fresh-stack.sh
+```
+
+This script will:
+- Check for existing resources
+- Create the CloudFormation stack
+- Download your private key
+- Set correct permissions
+
+---
+
+## ⚠️ Troubleshooting
+
+If you encounter issues with stuck stacks or resource conflicts:
+- See [TROUBLESHOOTING-STUCK-STACK.md](TROUBLESHOOTING-STUCK-STACK.md) for detailed solutions
+- Run `./cleanup-stuck-stack.sh` to clean up failed stacks
+
+---
+
 ## EC2 Sandbox Setup Template
 
 **File**: `ec2-sandbox-setup.yaml`
