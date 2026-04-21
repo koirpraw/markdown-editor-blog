@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "EC2 Sandbox Setup - Key Pair and Security Group for quick environment provisioning"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Configuration"
+        Parameters:
+          - Environment
+    ParameterLabels:
+      Environment:
+        default: "Environment Name"
+
+Parameters:
+  Environment:
+    Description: Environment identifier (dev, sandbox, test)
+    Type: String
+    Default: sandbox
+    AllowedValues:
+      - sandbox
+      - dev
+      - test
+
+Resources:
+  # EC2 Key Pair
+  MyEC2KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: myec2key
+      KeyType: rsa
+      KeyFormat: pem
+      Tags:
+        - Key: Name
+          Value: myec2key
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # Security Group for Web Server
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: WebServer-SG
+      GroupDescription: Security group for web servers - allows SSH and HTTP from anywhere
+      SecurityGroupIngress:
+        # SSH access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access from anywhere
+        # HTTP access from anywhere (IPv4)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access from anywhere
+      Tags:
+        - Key: Name
+          Value: WebServer-SG
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  KeyPairId:
+    Description: ID of the created EC2 Key Pair
+    Value: !GetAtt MyEC2KeyPair.KeyPairId
+    Export:
+      Name: !Sub "${AWS::StackName}-KeyPairId"
+
+  KeyPairFingerprint:
+    Description: Fingerprint of the created EC2 Key Pair
+    Value: !GetAtt MyEC2KeyPair.KeyFingerprint
+    Export:
+      Name: !Sub "${AWS::StackName}-KeyFingerprint"
+
+  SecurityGroupId:
+    Description: ID of the WebServer Security Group
+    Value: !Ref WebServerSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupId"
+
+  SecurityGroupName:
+    Description: Name of the WebServer Security Group
+    Value: !GetAtt WebServerSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-SecurityGroupName"
+
+  PrivateKeyCommand:
+    Description: AWS CLI command to retrieve the private key
+    Value: !Sub "aws ssm get-parameter --name /ec2/keypair/${MyEC2KeyPair.KeyPairId} --with-decryption --query Parameter.Value --output text > myec2key.pem && chmod 400 myec2key.pem"

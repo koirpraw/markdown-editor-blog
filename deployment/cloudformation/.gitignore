@@ -1,0 +1,12 @@
+# Ignore private keys
+*.pem
+*.ppk
+
+# Ignore local parameter files
+*.local.json
+*.local.yaml
+
+# Ignore temporary files
+*.tmp
+*.bak
+.DS_Store

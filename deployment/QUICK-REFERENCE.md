@@ -61,10 +61,10 @@ Update these files with your GitHub repository URL:
 
 ```bash
 # In deployment/setup-golden-ami.sh (line ~53)
-REPO_URL="https://github.com/YOUR_USERNAME/markdown-editor-blog.git"
+REPO_URL="https://github.com/koirpraw/markdown-editor-blog.git"
 
 # In deployment/user-data-full-bootstrap.sh (line ~101)
-git clone https://github.com/YOUR_USERNAME/markdown-editor-blog.git .
+git clone https://github.com/koirpraw/markdown-editor-blog.git .
 ```
 
 ### Create Golden AMI
